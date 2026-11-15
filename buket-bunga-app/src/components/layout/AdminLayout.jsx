@@ -15,12 +15,12 @@ import LoadingSpinner from '../ui/LoadingSpinner.jsx';
  * Peta judul halaman berdasarkan path untuk AdminHeader
  */
 const PAGE_TITLES = {
-  [ROUTES.ADMIN_DASHBOARD]:  { title: 'Dashboard',          breadcrumb: null },
-  [ROUTES.ADMIN_PRODUCTS]:   { title: 'Manajemen Produk',   breadcrumb: 'Produk' },
-  [ROUTES.ADMIN_PRODUCT_NEW]:{ title: 'Tambah Produk',      breadcrumb: 'Produk / Tambah' },
-  [ROUTES.ADMIN_STOCK]:      { title: 'Manajemen Stok',     breadcrumb: 'Stok' },
-  [ROUTES.ADMIN_ORDERS]:     { title: 'Daftar Pesanan',     breadcrumb: 'Pesanan' },
-  [ROUTES.ADMIN_REPORTS]:    { title: 'Laporan Pemesanan',  breadcrumb: 'Laporan' },
+  [ROUTES.ADMIN_DASHBOARD]: { title: 'Dashboard', breadcrumb: null },
+  [ROUTES.ADMIN_PRODUCTS]: { title: 'Manajemen Produk', breadcrumb: 'Produk' },
+  [ROUTES.ADMIN_PRODUCT_NEW]: { title: 'Tambah Produk', breadcrumb: 'Produk / Tambah' },
+  [ROUTES.ADMIN_STOCK]: { title: 'Manajemen Stok', breadcrumb: 'Stok' },
+  [ROUTES.ADMIN_ORDERS]: { title: 'Daftar Pesanan', breadcrumb: 'Pesanan' },
+  [ROUTES.ADMIN_REPORTS]: { title: 'Laporan Pemesanan', breadcrumb: 'Laporan' },
 };
 
 export default function AdminLayout() {
@@ -39,20 +39,14 @@ export default function AdminLayout() {
     );
   }
 
-  // Redirect ke login jika belum autentikasi
+  // Redirect ke login admin jika pengguna bukan admin.
   if (!isAdmin) {
     return <Navigate to={ROUTES.ADMIN_LOGIN} replace state={{ from: location }} />;
   }
 
   return (
     <div className="admin-layout">
-      {/* Sidebar */}
-      <AdminSidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      {/* Konten utama */}
+      <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="admin-content">
         <AdminHeader
           pageTitle={pageInfo.title}

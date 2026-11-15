@@ -1,0 +1,35 @@
+[
+  {
+    "id": "user-admin-01",
+    "username": "admin",
+    "password": "demo1234",
+    "name": "Administrator Toko",
+    "role": "admin",
+    "email": "admin@buketbunga.com",
+    "phone": "081299998888",
+    "address": "Kantor Pusat Florist, Jakarta",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "user-cust-01",
+    "username": "user",
+    "password": "user123",
+    "name": "Siti Anggraini",
+    "role": "customer",
+    "email": "siti@gmail.com",
+    "phone": "081200000001",
+    "address": "Jl. Mawar Melati No. 15, Jakarta Barat",
+    "createdAt": "2026-09-01T00:00:00.000Z"
+  },
+  {
+    "id": "user-cust-02",
+    "username": "budi",
+    "password": "user123",
+    "name": "Budi Santoso",
+    "role": "customer",
+    "email": "budi@gmail.com",
+    "phone": "081200000002",
+    "address": "Jl. Dahlia No. 4, Bandung",
+    "createdAt": "2026-09-10T00:00:00.000Z"
+  }
+]

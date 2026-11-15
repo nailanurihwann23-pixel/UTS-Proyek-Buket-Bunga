@@ -7,13 +7,13 @@
  */
 
 import { useState } from 'react';
-import { useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth.js';
 import { ROUTES } from '../../app/routes.jsx';
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx';
 
 export default function LoginPage() {
-  const { login, isAdmin, loading } = useAuth();
+  const { loginAsAdmin, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,6 +40,14 @@ export default function LoginPage() {
     setError('');
   }
 
+  async function handleDemoLogin() {
+    try {
+      await loginAsAdmin('admin', 'demo1234');
+      navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+    } catch (err) {
+      setError(err.message ?? 'Login demo gagal.');
+    }
+  }
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.username.trim() || !form.password.trim()) {
@@ -48,7 +56,7 @@ export default function LoginPage() {
     }
     setSubmitting(true);
     try {
-      await login(form.username.trim(), form.password);
+      await loginAsAdmin(form.username.trim(), form.password);
       navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
     } catch (err) {
       setError(err.message ?? 'Login gagal. Coba lagi.');
@@ -85,7 +93,7 @@ export default function LoginPage() {
             Panel Admin
           </h1>
           <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-            [Nama Toko]
+            Sistem Informasi Buket Bunga
           </p>
         </div>
 
@@ -102,8 +110,15 @@ export default function LoginPage() {
             color: 'var(--color-warning)',
           }}
         >
-          ⚠️ <strong>DEMO</strong> — Login ini bukan autentikasi produksi.<br />
-          Gunakan: <code>admin</code> / <code>demo1234</code>
+          🔐 <strong>Kredensial Admin Demo:</strong><br />
+          Username: <code>admin</code> | Password: <code>demo1234</code>
+        </div>
+
+        {/* Demo login button */}
+        <div style={{ textAlign: 'center', marginBottom: 'var(--space-4)' }}>
+          <button className="btn btn-primary btn-lg" onClick={handleDemoLogin} disabled={submitting}>
+            {submitting ? '⏳ Masuk...' : '🔐 Login langsung (Admin)'}
+          </button>
         </div>
 
         {/* Form */}
@@ -162,12 +177,21 @@ export default function LoginPage() {
             id="login-submit-btn"
             type="submit"
             className="btn btn-primary"
-            style={{ width: '100%' }}
+            style={{ width: '100%', marginBottom: 'var(--space-4)' }}
             disabled={submitting}
           >
-            {submitting ? '⏳ Masuk...' : '🔐 Masuk'}
+            {submitting ? '⏳ Masuk...' : '🔐 Masuk sebagai Admin'}
           </button>
         </form>
+
+        <div style={{ textAlign: 'center', marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <Link to={ROUTES.HOME} style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-pink-primary)' }}>
+            &larr; Kembali ke Beranda Toko
+          </Link>
+          <Link to={ROUTES.CUSTOMER_LOGIN} style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+            Bukan Admin? Masuk sebagai Pelanggan
+          </Link>
+        </div>
       </div>
     </div>
   );

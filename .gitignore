@@ -25,3 +25,9 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Documents & Presentations (Dikecualikan sesuai permintaan)
+*.docx
+*.doc
+*.pptx
+*.ppt

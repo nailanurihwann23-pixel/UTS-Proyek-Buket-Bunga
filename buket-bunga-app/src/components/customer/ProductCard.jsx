@@ -6,6 +6,7 @@
 import { Link } from 'react-router-dom';
 import { formatRupiah } from '../../utils/currency.js';
 import { ROUTES, buildPath } from '../../app/routes.jsx';
+import { useCart } from '../../context/useCart.js';
 
 /**
  * Peta emoji / visual berdasarkan kategori
@@ -20,6 +21,7 @@ const CATEGORY_EMOJI = {
 };
 
 export default function ProductCard({ product }) {
+  const { addToCart } = useCart();
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 3;
   const emoji = CATEGORY_EMOJI[product.category] || '💐';
@@ -28,7 +30,22 @@ export default function ProductCard({ product }) {
     <article className="card product-card" aria-labelledby={`product-title-${product.id}`}>
       {/* Gambar/Visual Ilustrasi Produk */}
       <div className="product-card__media">
-        <div className="product-card__placeholder">
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const placeholder = e.currentTarget.parentElement.querySelector('.product-card__placeholder');
+              if (placeholder) placeholder.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div
+          className="product-card__placeholder"
+          style={{ display: product.image ? 'none' : 'flex' }}
+        >
           <span className="product-card__emoji" aria-hidden="true">{emoji}</span>
           <span className="product-card__category-tag">{product.category}</span>
         </div>
@@ -59,7 +76,7 @@ export default function ProductCard({ product }) {
             <span className="product-card__price">{formatRupiah(product.price)}</span>
           </div>
 
-          <div className="product-card__actions">
+          <div className="product-card__actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <Link
               to={buildPath(ROUTES.PRODUCT_DETAIL, { productId: product.id })}
               className="btn btn-ghost btn-sm"
@@ -72,13 +89,25 @@ export default function ProductCard({ product }) {
                 Habis
               </button>
             ) : (
-              <Link
-                to={`${ROUTES.ORDER_FORM}?productId=${product.id}`}
-                className="btn btn-primary btn-sm"
-                aria-label={`Pesan ${product.name}`}
-              >
-                Pesan
-              </Link>
+              <>
+                <button
+                  type="button"
+                  onClick={() => addToCart(product, 1)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  title="Tambah ke Keranjang Belanja"
+                  aria-label={`Tambah ${product.name} ke keranjang`}
+                >
+                  🛒 +
+                </button>
+                <Link
+                  to={`${ROUTES.ORDER_FORM}?productId=${product.id}`}
+                  className="btn btn-primary btn-sm"
+                  aria-label={`Pesan ${product.name}`}
+                >
+                  Pesan
+                </Link>
+              </>
             )}
           </div>
         </div>

@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getProductById } from '../../services/mockService.js';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useProducts } from '../../context/ProductsContext.jsx';
 import { formatRupiah } from '../../utils/currency.js';
 import { ROUTES } from '../../app/routes.jsx';
+import { useCart } from '../../context/useCart.js';
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx';
 import ErrorState from '../../components/ui/ErrorState.jsx';
 
@@ -22,29 +23,14 @@ const CATEGORY_EMOJI = {
 
 export default function ProductDetailPage() {
   const { productId } = useParams();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { products, loading: productsLoading } = useProducts();
+  const [quantity, setQuantity] = useState(1);
 
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchDetail() {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getProductById(productId);
-        if (isMounted) setProduct(data);
-      } catch (err) {
-        if (isMounted) setError(err.message || 'Produk tidak ditemukan.');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    fetchDetail();
-    return () => {
-      isMounted = false;
-    };
-  }, [productId]);
+  const product = products.find((p) => p.id === productId) ?? null;
+  const loading = productsLoading && !product;
+  const error = !productsLoading && !product ? 'Produk tidak ditemukan.' : null;
 
   if (loading) {
     return (
@@ -104,24 +90,38 @@ export default function ProductDetailPage() {
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
-            padding: 'var(--space-6)',
+            padding: product.image ? 0 : 'var(--space-6)',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ fontSize: '6rem', marginBottom: 'var(--space-3)', filter: 'drop-shadow(0 8px 12px rgba(0,0,0,0.08))' }} aria-hidden="true">
-            {emoji}
-          </div>
-          <span
-            style={{
-              background: 'rgba(255, 255, 255, 0.85)',
-              padding: '4px 16px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: 'var(--font-size-xs)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            Kategori: {product.category}
-          </span>
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              style={{ width: '100%', height: '100%', minHeight: '340px', maxHeight: '450px', objectFit: 'cover' }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : (
+            <>
+              <div style={{ fontSize: '6rem', marginBottom: 'var(--space-3)', filter: 'drop-shadow(0 8px 12px rgba(0,0,0,0.08))' }} aria-hidden="true">
+                {emoji}
+              </div>
+              <span
+                style={{
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  padding: '4px 16px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                Kategori: {product.category}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Kolom Informasi & Aksi */}
@@ -189,25 +189,90 @@ export default function ProductDetailPage() {
             <div>🎀 <strong>Packaging:</strong> Pembungkus kertas cellophane premium dengan pita satin.</div>
           </div>
 
-          {/* Tombol CTA Pesan */}
-          <div style={{ marginTop: 'auto', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-            {isOutOfStock ? (
-              <button className="btn btn-secondary" disabled style={{ flex: 1 }}>
-                Produk Sedang Habis
-              </button>
-            ) : (
-              <Link
-                to={`${ROUTES.ORDER_FORM}?productId=${product.id}`}
-                className="btn btn-primary btn-lg"
-                style={{ flex: 1, textAlign: 'center' }}
-                id="btn-pesan-buket-ini"
-              >
-                🌸 Pesan Buket Ini
-              </Link>
+          {/* Pengatur Kuantitas & Tombol CTA Pesan */}
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            {!isOutOfStock && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Jumlah:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="btn btn-secondary btn-sm"
+                    style={{ width: '32px', height: '32px', padding: 0 }}
+                    aria-label="Kurangi jumlah"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    max={product.stock}
+                    value={quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) setQuantity(Math.max(1, Math.min(product.stock, val)));
+                    }}
+                    style={{
+                      width: '54px',
+                      height: '32px',
+                      textAlign: 'center',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--color-border)',
+                      fontWeight: 600,
+                    }}
+                    aria-label="Jumlah pesanan"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                    className="btn btn-secondary btn-sm"
+                    disabled={quantity >= product.stock}
+                    style={{ width: '32px', height: '32px', padding: 0 }}
+                    aria-label="Tambah jumlah"
+                  >
+                    +
+                  </button>
+                </div>
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                  Total: <strong style={{ color: 'var(--color-pink-primary)' }}>{formatRupiah(product.price * quantity)}</strong>
+                </span>
+              </div>
             )}
-            <Link to={ROUTES.CONTACT} className="btn btn-ghost">
-              Tanya Produk
-            </Link>
+
+            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+              {isOutOfStock ? (
+                <button className="btn btn-secondary" disabled style={{ flex: 1 }}>
+                  Produk Sedang Habis
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => addToCart(product, quantity)}
+                    className="btn btn-secondary btn-lg"
+                    style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    🛒 + Keranjang
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addToCart(product, quantity);
+                      navigate(ROUTES.ORDER_FORM);
+                    }}
+                    className="btn btn-primary btn-lg"
+                    style={{ flex: 1, textAlign: 'center' }}
+                    id="btn-pesan-buket-ini"
+                  >
+                    🌸 Beli Sekarang
+                  </button>
+                </>
+              )}
+              <Link to={ROUTES.CONTACT} className="btn btn-ghost">
+                Tanya Produk
+              </Link>
+            </div>
           </div>
         </div>
       </div>

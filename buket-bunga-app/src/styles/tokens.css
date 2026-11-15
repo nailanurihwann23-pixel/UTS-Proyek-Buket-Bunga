@@ -5,15 +5,15 @@
 
 :root {
   /* ── Brand Colors ──────────────────────────────────────── */
-  --color-pink-primary:   #E84D8A;
-  --color-pink-dark:      #B92D68;
-  --color-pink-soft:      #FCE7F0;
+  --color-pink-primary:   #9B70B2;
+  --color-pink-dark:      #6A4B81;
+  --color-pink-soft:      #F3E6F5;
 
-  --color-yellow-primary: #FFD45A;
+  --color-yellow-primary: #FFF9C4;
   --color-yellow-soft:    #FFF5CC;
 
   --color-white:          #FFFFFF;
-  --color-bg:             #FFF9FC;
+  --color-bg:             #FFF9C4;
 
   /* ── Text ──────────────────────────────────────────────── */
   --color-text-primary:   #29232A;

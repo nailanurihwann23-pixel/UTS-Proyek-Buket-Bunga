@@ -105,7 +105,7 @@ export default function DashboardPage() {
       >
         <div>
           <span style={{ fontWeight: 'var(--font-weight-bold)', color: 'var(--color-pink-primary)' }}>
-            🌸 Selamat Datang di Panel Admin Toko Buket Bunga
+            🌸 Selamat Datang di Panel Admin RIBINKKOCH
           </span>
           <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
             Mode Demo Aktif — Seluruh data operasional dihitung dari simulasi state in-memory.

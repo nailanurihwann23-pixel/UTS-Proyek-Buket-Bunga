@@ -6,51 +6,22 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES, buildPath } from '../../app/routes.jsx';
-import { getProducts, deleteProduct, getCategories } from '../../services/mockService.js';
+import { getCategories } from '../../services/mockService.js';
+import { useProducts } from '../../context/ProductsContext.jsx';
 import { formatRupiah } from '../../utils/currency.js';
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../../components/ui/EmptyState.jsx';
 import ErrorState from '../../components/ui/ErrorState.jsx';
 
 export default function ProductListPage() {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { products, categories, loading, error, removeProduct } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState('Semua');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal State untuk konfirmasi hapus
   const [productToDelete, setProductToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState(null);
-
-  // Load data
-  useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      try {
-        setLoading(true);
-        setError(null);
-        const [productList, categoryList] = await Promise.all([
-          getProducts(),
-          getCategories(),
-        ]);
-        if (isMounted) {
-          setProducts(productList);
-          setCategories(categoryList);
-        }
-      } catch (err) {
-        if (isMounted) setError(err.message || 'Gagal memuat daftar produk.');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    loadData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Filter products
   const filteredProducts = useMemo(() => {
@@ -69,8 +40,7 @@ export default function ProductListPage() {
     if (!productToDelete) return;
     try {
       setIsDeleting(true);
-      await deleteProduct(productToDelete.id);
-      setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
+      await removeProduct(productToDelete.id);
       setFeedbackMessage({
         type: 'success',
         text: `Produk "${productToDelete.name}" berhasil dihapus.`,
@@ -240,9 +210,21 @@ export default function ProductListPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: '1.4rem',
+                          overflow: 'hidden',
                         }}
                       >
-                        🌸
+                        {p.image ? (
+                          <img
+                            src={p.image}
+                            alt={p.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          '🌸'
+                        )}
                       </div>
                     </td>
                     <td>

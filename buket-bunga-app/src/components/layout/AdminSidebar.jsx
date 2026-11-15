@@ -39,7 +39,7 @@ export default function AdminSidebar({ open, onClose }) {
         <Link to={ROUTES.ADMIN_DASHBOARD} className="admin-sidebar__logo" onClick={onClose}>
           <div className="admin-sidebar__logo-icon" aria-hidden="true">🌸</div>
           <div>
-            <div className="admin-sidebar__logo-text">[Nama Toko]</div>
+            <div className="admin-sidebar__logo-text">RIBINKKOCH</div>
             <div className="admin-sidebar__logo-sub">Panel Admin</div>
           </div>
         </Link>

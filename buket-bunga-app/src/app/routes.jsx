@@ -17,6 +17,10 @@ export const ROUTES = {
   ORDER_FORM:     '/pesan',
   ORDER_STATUS:   '/status-pesanan',
   CONTACT:        '/kontak',
+  CUSTOMER_LOGIN:    '/login',
+  CUSTOMER_REGISTER: '/register',
+  CUSTOMER_ACCOUNT:  '/akun',
+  CART:              '/keranjang',
 
   // Area admin
   ADMIN_LOGIN:    '/admin/login',

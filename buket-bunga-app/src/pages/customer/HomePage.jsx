@@ -3,44 +3,22 @@
  * Sistem Informasi Buket Bunga
  */
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../app/routes.jsx';
-import { getProducts } from '../../services/mockService.js';
+import { useProducts } from '../../context/ProductsContext.jsx';
 import ProductCard from '../../components/customer/ProductCard.jsx';
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx';
 import ErrorState from '../../components/ui/ErrorState.jsx';
 
 export default function HomePage() {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { products, loading, error } = useProducts();
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      try {
-        setLoading(true);
-        setError(null);
-        const allProducts = await getProducts();
-        if (isMounted) {
-          // Ambil produk unggulan (maks 4 produk dengan stok terbanyak)
-          const featured = [...allProducts]
-            .sort((a, b) => b.stock - a.stock)
-            .slice(0, 4);
-          setFeaturedProducts(featured);
-        }
-      } catch (err) {
-        if (isMounted) setError(err.message || 'Gagal memuat produk unggulan.');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    loadData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // Ambil produk unggulan (maks 4 produk dengan stok terbanyak)
+  const featuredProducts = useMemo(
+    () => [...products].sort((a, b) => b.stock - a.stock).slice(0, 4),
+    [products]
+  );
 
   return (
     <div className="home-page">
@@ -83,7 +61,7 @@ export default function HomePage() {
               marginBottom: 'var(--space-4)',
             }}
           >
-            Sampaikan Kasih &amp; Doa Melalui<br />
+            Rangkai Keindahan,<br />
             <span
               style={{
                 background: 'linear-gradient(135deg, var(--color-pink-primary), var(--color-pink-dark))',
@@ -92,7 +70,7 @@ export default function HomePage() {
                 backgroundClip: 'text',
               }}
             >
-              Rangkaian Bunga Terbaik
+              Kirimkan Kebahagiaan.
             </span>
           </h1>
 
@@ -120,7 +98,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Section Produk Unggulan ───────────────────────── */}
+
+{/* ── Section Produk Unggulan ───────────────────────── */}
       <section className="container" style={{ padding: 'var(--space-16) var(--space-4)' }} aria-label="Produk Unggulan">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'var(--space-8)' }}>
           <div>
@@ -246,7 +225,7 @@ export default function HomePage() {
           >
             <div style={{ fontSize: '5rem', marginBottom: 'var(--space-4)' }} aria-hidden="true">🌸</div>
             <div style={{ fontWeight: 'var(--font-weight-bold)', fontSize: 'var(--font-size-lg)', color: 'var(--color-pink-dark)' }}>
-              [Nama Toko]
+              RIBINKKOCH
             </div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
               Florist &amp; Bouquet Specialist
@@ -261,7 +240,7 @@ export default function HomePage() {
               Merangkai Kebahagiaan untuk Hari Istimewa Anda
             </h2>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', lineHeight: 'var(--line-height-relaxed)', marginBottom: 'var(--space-4)' }}>
-              [Nama Toko] berdedikasi menghadirkan karya buket bunga yang tidak hanya indah secara visual, namun juga mampu mewakili kehangatan rasa sayang dan penghargaan Anda kepada orang-orang terkasih.
+              RIBINKKOCH berdedikasi menghadirkan karya buket bunga yang tidak hanya indah secara visual, namun juga mampu mewakili kehangatan rasa sayang dan penghargaan Anda kepada orang-orang terkasih.
             </p>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', lineHeight: 'var(--line-height-relaxed)', marginBottom: 'var(--space-6)' }}>
               Kami menyediakan aneka pilihan bunga impor dan lokal mulai dari mawar premium, tulip pastel, matahari cerah, hingga peony mewah yang siap dikirimkan tepat pada waktunya.

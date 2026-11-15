@@ -6,12 +6,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ROUTES } from '../../app/routes.jsx';
-import {
-  getProductById,
-  createProduct,
-  updateProduct,
-  getCategories,
-} from '../../services/mockService.js';
+import { getProductById, getCategories } from '../../services/mockService.js';
+import { useProducts } from '../../context/ProductsContext.jsx';
 import { required, validatePrice, validateStock, runValidations } from '../../utils/validation.js';
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx';
 import ErrorState from '../../components/ui/ErrorState.jsx';
@@ -20,6 +16,7 @@ export default function ProductFormPage() {
   const { productId } = useParams();
   const navigate = useNavigate();
   const isEditMode = Boolean(productId);
+  const { addProduct, editProduct } = useProducts();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -86,8 +83,39 @@ export default function ProductFormPage() {
     }
   };
 
-  // Simulasi upload file gambar
-  const handleFileChange = (e) => {
+  // Helper konversi file gambar ke Base64 teroptimasi
+  const processImageFile = (file, maxWidth = 800, quality = 0.85) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Upload file gambar
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -99,11 +127,22 @@ export default function ProductFormPage() {
       return;
     }
 
-    // Buat URL preview sementara
-    const previewUrl = URL.createObjectURL(file);
-    setPhotoPreview(previewUrl);
-    setFormData((prev) => ({ ...prev, image: previewUrl }));
-    setErrors((prev) => ({ ...prev, image: null }));
+    try {
+      const base64Image = await processImageFile(file);
+      setPhotoPreview(base64Image);
+      setFormData((prev) => ({ ...prev, image: base64Image }));
+      setErrors((prev) => ({ ...prev, image: null }));
+    } catch {
+      setErrors((prev) => ({
+        ...prev,
+        image: 'Gagal memproses gambar. Coba gambar lain.',
+      }));
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null);
+    setFormData((prev) => ({ ...prev, image: null }));
   };
 
   const handleSubmit = async (e) => {
@@ -119,6 +158,7 @@ export default function ProductFormPage() {
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -136,13 +176,13 @@ export default function ProductFormPage() {
       };
 
       if (isEditMode) {
-        await updateProduct(productId, payload);
+        await editProduct(productId, payload);
         setFeedback({
           type: 'success',
           text: 'Perubahan produk berhasil disimpan!',
         });
       } else {
-        await createProduct(payload);
+        await addProduct(payload);
         setFeedback({
           type: 'success',
           text: 'Produk baru berhasil ditambahkan ke katalog!',
@@ -359,20 +399,54 @@ export default function ProductFormPage() {
 
             {/* Input & Helper */}
             <div style={{ flex: 1, minWidth: '220px' }}>
-              <input
-                type="file"
-                id="photo-upload"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleFileChange}
-                style={{ fontSize: 'var(--font-size-xs)' }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <input
+                  type="file"
+                  id="photo-upload"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileChange}
+                  style={{ fontSize: 'var(--font-size-xs)' }}
+                />
+                {photoPreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '11px', padding: '3px 8px' }}
+                  >
+                    Hapus Foto
+                  </button>
+                )}
+              </div>
               <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: 'var(--space-1)' }}>
-                Format didukung: JPG, PNG, WebP. Maksimal ukuran demo 5MB.
+                Format didukung: JPG, PNG, WebP. Foto akan otomatis disimpan ke katalog.
               </p>
               {errors.image && <span className="form-error">⚠️ {errors.image}</span>}
             </div>
           </div>
         </div>
+
+        {/* Feedback & Error Warning dekat Tombol */}
+        {feedback && (
+          <div
+            style={{
+              padding: 'var(--space-3) var(--space-4)',
+              borderRadius: 'var(--radius-md)',
+              background: feedback.type === 'success' ? 'var(--color-success-soft)' : 'var(--color-danger-soft)',
+              color: feedback.type === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
+              border: `1px solid ${feedback.type === 'success' ? 'var(--color-success)' : 'var(--color-danger)'}`,
+              fontSize: 'var(--font-size-sm)',
+            }}
+          >
+            {feedback.text}
+          </div>
+        )}
+
+        {Object.keys(errors).length > 0 && (
+          <div style={{ color: 'var(--color-danger)', fontSize: 'var(--font-size-sm)' }}>
+            ⚠️ Mohon periksa kembali kolom yang bertanda merah di atas.
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div
@@ -380,7 +454,7 @@ export default function ProductFormPage() {
             display: 'flex',
             justifyContent: 'flex-end',
             gap: 'var(--space-3)',
-            marginTop: 'var(--space-4)',
+            marginTop: 'var(--space-2)',
             paddingTop: 'var(--space-4)',
             borderTop: '1px solid var(--color-border)',
           }}
@@ -389,7 +463,7 @@ export default function ProductFormPage() {
             Batal
           </Link>
           <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'Menyimpan...' : isEditMode ? 'Simpan Perubahan' : 'Tambah Produk'}
+            {submitting ? 'Menyimpan... ⏳' : isEditMode ? 'Simpan Perubahan' : 'Tambah Produk'}
           </button>
         </div>
       </form>

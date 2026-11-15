@@ -1,0 +1,12 @@
+{
+  "name": "sot-sistem-informasi-buket-bunga",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node start.js",
+    "start": "node start.js",
+    "build": "npm --prefix buket-bunga-app run build",
+    "preview": "npm --prefix buket-bunga-app run preview",
+    "lint": "npm --prefix buket-bunga-app run lint"
+  }
+}

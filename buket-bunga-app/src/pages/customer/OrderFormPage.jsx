@@ -4,16 +4,21 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { getProducts, createOrder } from '../../services/mockService.js';
 import { formatRupiah } from '../../utils/currency.js';
 import { required, validatePhone, validateQuantity, runValidations } from '../../utils/validation.js';
 import { ROUTES } from '../../app/routes.jsx';
+import { useAuth } from '../../context/useAuth.js';
+import { useCart } from '../../context/useCart.js';
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx';
 
 export default function OrderFormPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
+  const { items: cartItems, clearCart } = useCart();
   const preselectedProductId = searchParams.get('productId') || '';
 
   const [products, setProducts] = useState([]);
@@ -21,9 +26,9 @@ export default function OrderFormPage() {
 
   // Form State
   const [formData, setFormData] = useState(() => ({
-    customerName: '',
-    phone: '',
-    address: '',
+    customerName: user?.name || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
     productId: preselectedProductId,
     quantity: 1,
     note: '',
@@ -34,6 +39,8 @@ export default function OrderFormPage() {
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  const hasCartItems = cartItems && cartItems.length > 0;
+
   // Muat daftar produk
   useEffect(() => {
     let isMounted = true;
@@ -43,7 +50,7 @@ export default function OrderFormPage() {
         const data = await getProducts();
         if (isMounted) {
           setProducts(data);
-          // Set default produk jika belum terpilih
+          // Set default produk jika belum terpilih dan tidak menggunakan keranjang
           setFormData((prev) => {
             if (!prev.productId && data.length > 0) {
               const available = data.find((p) => p.stock > 0) || data[0];
@@ -64,17 +71,42 @@ export default function OrderFormPage() {
     };
   }, []);
 
-  // Produk yang dipilih saat ini
+  // Produk yang dipilih saat ini (mode single item)
   const selectedProduct = useMemo(() => {
     return products.find((p) => p.id === formData.productId) || null;
   }, [products, formData.productId]);
 
   // Kalkulasi total
   const calculatedTotal = useMemo(() => {
+    if (hasCartItems) {
+      return cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    }
     if (!selectedProduct) return 0;
     const qty = parseInt(formData.quantity, 10) || 0;
     return selectedProduct.price * qty;
-  }, [selectedProduct, formData.quantity]);
+  }, [hasCartItems, cartItems, selectedProduct, formData.quantity]);
+
+  // Wajib memiliki akun & login terlebih dahulu untuk memesan
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingSpinner label="Memeriksa status akun..." />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Navigate
+        to={ROUTES.CUSTOMER_LOGIN}
+        replace
+        state={{
+          from: location,
+          message: 'Silakan masuk atau daftar akun terlebih dahulu untuk melakukan pemesanan buket bunga.',
+        }}
+      />
+    );
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -91,18 +123,22 @@ export default function OrderFormPage() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // Jalankan validasi lengkap
-    const validationErrors = runValidations({
+    // Jalankan validasi
+    const validationRules = {
       customerName: () => required(formData.customerName) || (formData.customerName.trim().length < 3 ? 'Nama minimal 3 karakter.' : null),
       phone: () => validatePhone(formData.phone),
       address: () => required(formData.address) || (formData.address.trim().length < 8 ? 'Alamat pengiriman terlalu singkat.' : null),
-      productId: () => required(formData.productId),
-      quantity: () => validateQuantity(formData.quantity, selectedProduct?.stock || 999),
-    });
+    };
+
+    if (!hasCartItems) {
+      validationRules.productId = () => required(formData.productId);
+      validationRules.quantity = () => validateQuantity(formData.quantity, selectedProduct?.stock || 999);
+    }
+
+    const validationErrors = runValidations(validationRules);
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      // Scroll ke elemen error pertama
       const firstErrorKey = Object.keys(validationErrors)[0];
       const el = document.getElementById(`field-${firstErrorKey}`);
       if (el) el.focus();
@@ -111,24 +147,39 @@ export default function OrderFormPage() {
 
     setSubmitting(true);
     try {
+      // Susun item pesanan (apakah dari keranjang atau single-item)
+      const itemsPayload = hasCartItems
+        ? cartItems.map((it) => ({
+            productId: it.product.id,
+            productNameSnapshot: it.product.name,
+            unitPriceSnapshot: it.product.price,
+            quantity: it.quantity,
+            subtotal: it.product.price * it.quantity,
+          }))
+        : [
+            {
+              productId: selectedProduct.id,
+              productNameSnapshot: selectedProduct.name,
+              unitPriceSnapshot: selectedProduct.price,
+              quantity: Number(formData.quantity),
+              subtotal: calculatedTotal,
+            },
+          ];
+
       const orderPayload = {
+        userId: user?.id || null,
         customerName: formData.customerName.trim(),
         phone: formData.phone.trim(),
         address: formData.address.trim(),
         note: formData.note.trim(),
         total: calculatedTotal,
-        items: [
-          {
-            productId: selectedProduct.id,
-            productNameSnapshot: selectedProduct.name,
-            unitPriceSnapshot: selectedProduct.price,
-            quantity: Number(formData.quantity),
-            subtotal: calculatedTotal,
-          },
-        ],
+        items: itemsPayload,
       };
 
       const result = await createOrder(orderPayload);
+      if (hasCartItems) {
+        clearCart();
+      }
       setOrderSuccess(result);
     } catch (err) {
       alert(err.message || 'Gagal memproses pesanan.');
@@ -157,7 +208,7 @@ export default function OrderFormPage() {
             Pesanan Berhasil Dibuat!
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-6)' }}>
-            Terima kasih telah memesan di [Nama Toko]. Simpan kode pesanan berikut untuk memantau status pengerjaan buket Anda.
+            Terima kasih telah memesan di RIBINKKOCH. Simpan kode pesanan berikut untuk memantau status pengerjaan buket Anda.
           </p>
 
           {/* Kotak Kode Pesanan */}
@@ -216,11 +267,20 @@ export default function OrderFormPage() {
               <span style={{ color: 'var(--color-text-secondary)' }}>Pemesan:</span>
               <strong>{orderSuccess.customerName} ({orderSuccess.phone})</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--color-text-secondary)' }}>Produk:</span>
-              <strong>{orderSuccess.items[0]?.productNameSnapshot} x {orderSuccess.items[0]?.quantity}</strong>
+
+            <div style={{ borderTop: '1px dashed var(--color-border)', paddingTop: '6px', margin: '4px 0' }}>
+              <div style={{ color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
+                Buket yang Dipesan ({orderSuccess.items.length} Macam):
+              </div>
+              {orderSuccess.items.map((it, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                  <span>🌸 {it.productNameSnapshot} <strong>x{it.quantity}</strong></span>
+                  <span>{formatRupiah(it.subtotal)}</span>
+                </div>
+              ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed var(--color-border)', paddingTop: '6px' }}>
               <span style={{ color: 'var(--color-text-secondary)' }}>Total Biaya:</span>
               <strong style={{ color: 'var(--color-pink-primary)' }}>{formatRupiah(orderSuccess.total)}</strong>
             </div>
@@ -240,6 +300,11 @@ export default function OrderFormPage() {
             >
               🔍 Lacak Status Pesanan Ini
             </button>
+            {user && (
+              <Link to={ROUTES.CUSTOMER_ACCOUNT} className="btn btn-secondary">
+                👤 Riwayat Pesanan Saya
+              </Link>
+            )}
             <Link to={ROUTES.CATALOG} className="btn btn-secondary">
               🌺 Kembali ke Katalog
             </Link>

@@ -14,10 +14,9 @@ export default function CustomerFooter() {
       <div className="customer-footer__inner">
         {/* Kolom brand */}
         <div>
-          <div className="customer-footer__brand-name">🌸 [Nama Toko]</div>
+          <div className="customer-footer__brand-name">🌸 RIBINKKOCH</div>
           <p className="customer-footer__brand-desc">
-            Rangkaian buket bunga segar untuk setiap momen spesial Anda.
-            {/* Ganti dengan deskripsi toko asli */}
+            Rangkaian buket bunga segar dan istimewa untuk setiap momen spesial Anda.
           </p>
         </div>
 
@@ -37,22 +36,21 @@ export default function CustomerFooter() {
         <div>
           <div className="customer-footer__col-title">Hubungi Kami</div>
           <div className="customer-footer__links">
-            <span>📞 [Nomor Telepon]</span>
-            {/* Tombol WA hanya aktif jika nomor dikonfigurasi */}
+            <span>📞 0812-3456-7890</span>
             <span
-              title="Nomor WhatsApp belum dikonfigurasi"
-              style={{ cursor: 'default', opacity: 0.6 }}
+              title="Hubungi customer service RIBINKKOCH"
+              style={{ cursor: 'pointer' }}
             >
-              💬 WhatsApp — <em>Segera hadir</em>
+              💬 WhatsApp: +62 812-3456-7890
             </span>
-            <span>🕐 [Jam Operasional]</span>
+            <span>🕐 Setiap Hari (08.00 - 20.00 WIB)</span>
           </div>
         </div>
       </div>
 
       <div className="customer-footer__bottom">
-        <span>© {CURRENT_YEAR} [Nama Toko]. Seluruh hak dilindungi.</span>
-        <span className="badge-demo" role="note">⚠️ DEMO — Data mock, bukan produksi</span>
+        <span>© {CURRENT_YEAR} RIBINKKOCH. Seluruh hak dilindungi.</span>
+        <span className="badge-demo" role="note">🌸 Florist &amp; Bouquet Specialist</span>
       </div>
     </footer>
   );

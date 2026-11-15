@@ -3,47 +3,18 @@
  * Sistem Informasi Buket Bunga
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { getProducts, getCategories } from '../../services/mockService.js';
+import { useState, useMemo } from 'react';
+import { useProducts } from '../../context/ProductsContext.jsx';
 import ProductCard from '../../components/customer/ProductCard.jsx';
 import LoadingSpinner from '../../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../../components/ui/EmptyState.jsx';
 import ErrorState from '../../components/ui/ErrorState.jsx';
 
 export default function CatalogPage() {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const { products, categories, loading, error } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadCatalog() {
-      try {
-        setLoading(true);
-        setError(null);
-        const [productList, categoryList] = await Promise.all([
-          getProducts(),
-          getCategories(),
-        ]);
-        if (isMounted) {
-          setProducts(productList);
-          setCategories(categoryList);
-        }
-      } catch (err) {
-        if (isMounted) setError(err.message || 'Gagal memuat katalog produk.');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    loadCatalog();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Filter produk berdasarkan kategori, query pencarian, dan opsi stok
   const filteredProducts = useMemo(() => {
